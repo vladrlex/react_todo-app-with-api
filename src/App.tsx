@@ -1,5 +1,4 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
-/* eslint-disable react-hooks/exhaustive-deps */
 import React, { useState, useEffect } from 'react';
 import { UserWarning } from './UserWarning';
 import {
@@ -9,6 +8,7 @@ import {
   getTodos,
   USER_ID,
 } from './api/todos';
+import { ErrorMessages } from './utils/errorMessageEnum';
 
 import { FilterStatus } from './utils/FilterStatus';
 import { Todo } from './types/Todo';
@@ -21,7 +21,9 @@ import { TodoItem } from './components/TodoItem';
 export const App: React.FC = () => {
   const [todos, setTodos] = useState<Todo[]>([]);
   const [isLoading, setIsLoading] = useState<boolean>(false);
-  const [errorMessage, setErrorMessage] = useState<string>('');
+  const [errorMessage, setErrorMessage] = useState<ErrorMessages>(
+    ErrorMessages.Default,
+  );
   const [filter, setFilter] = useState<FilterStatus>(FilterStatus.All);
   const [todoOnLoading, setTodoOnLoading] = useState<number[] | null>(null);
   const [tempTodo, setTempTodo] = useState<null | Todo>(null);
@@ -32,11 +34,11 @@ export const App: React.FC = () => {
     }
 
     setIsLoading(true);
-    setErrorMessage('');
+    setErrorMessage(ErrorMessages.Default);
 
     getTodos()
       .then(result => setTodos(result))
-      .catch(err => setErrorMessage(err.message || 'Unable to load todos'))
+      .catch(() => setErrorMessage(ErrorMessages.LoadTodos))
       .finally(() => setIsLoading(false));
   };
 
@@ -59,7 +61,7 @@ export const App: React.FC = () => {
         return !!response;
       })
       .catch(() => {
-        setErrorMessage('Unable to delete a todo');
+        setErrorMessage(ErrorMessages.DeleteTodo);
       })
       .finally(() => setTodoOnLoading(null));
 
@@ -82,14 +84,14 @@ export const App: React.FC = () => {
         const hasErrors = results.some(result => result.status === 'rejected');
 
         if (hasErrors) {
-          setErrorMessage('Unable to delete a todo');
+          setErrorMessage(ErrorMessages.DeleteTodo);
         }
 
         setTodos(currentTodos =>
           currentTodos.filter(todo => !successfulIds.includes(todo.id)),
         );
       })
-      .catch(() => setErrorMessage('Unable to delete todos'))
+      .catch(() => setErrorMessage(ErrorMessages.DeleteTodo))
       .finally(() => setTodoOnLoading(null));
   };
 
@@ -97,7 +99,7 @@ export const App: React.FC = () => {
     let hasError = false;
 
     if (title.trim().length === 0) {
-      setErrorMessage('Title should not be empty');
+      setErrorMessage(ErrorMessages.EmptyTitle);
 
       return null;
     }
@@ -114,7 +116,7 @@ export const App: React.FC = () => {
 
       setTodos(prevTodos => [...prevTodos, newTodo]);
     } catch (error: any) {
-      setErrorMessage(error.message || 'Unable to add a todo');
+      setErrorMessage(ErrorMessages.AddTodo);
       hasError = true;
     } finally {
       setTempTodo(null);
@@ -145,7 +147,7 @@ export const App: React.FC = () => {
 
       return Boolean(result);
     } catch (error: any) {
-      setErrorMessage('Unable to update a todo');
+      setErrorMessage(ErrorMessages.UpdateTodo);
       throw error;
     } finally {
       setTodoOnLoading(null);
@@ -154,12 +156,11 @@ export const App: React.FC = () => {
 
   const filteredTodos = todos.filter(todo => {
     switch (filter) {
-      case FilterStatus.All:
-        return true;
       case FilterStatus.Active:
         return !todo.completed;
       case FilterStatus.Completed:
         return todo.completed;
+      case FilterStatus.All:
       default:
         return true;
     }
@@ -184,7 +185,7 @@ export const App: React.FC = () => {
 
       setTodos(updatedTodos);
     } catch (error: any) {
-      setErrorMessage(error.message || 'Unable to update todos');
+      setErrorMessage(ErrorMessages.UpdateTodo);
     }
   };
 
@@ -206,7 +207,7 @@ export const App: React.FC = () => {
         ),
       );
     } catch (error: any) {
-      setErrorMessage(error.message || 'Unable to update a todo');
+      setErrorMessage(ErrorMessages.UpdateTodo);
     } finally {
       setTodoOnLoading(null);
     }
@@ -253,7 +254,6 @@ export const App: React.FC = () => {
         )}
       </div>
 
-      {/* Add the 'hidden' class to hide the message smoothly */}
       <ErrorMessage error={errorMessage} setError={setErrorMessage} />
     </div>
   );
